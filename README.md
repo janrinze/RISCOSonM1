@@ -6,12 +6,12 @@ Install Debian 12 in UTM for Apple.
 On Linux install the dependancies:
 
 ```
-sudo apt install attr bash bubblewrap build-essential g++ gcc git libattr1 libattr1-dev libsdl2-dev libseccomp-dev libseccomp2 make ninja-build pkg-config
+sudo apt install attr bash bubblewrap build-essential g++ gcc git libattr1 libattr1-dev libsdl2-dev libseccomp-dev libseccomp2 make ninja-build pkg-config libglut-dev
 ```
 
 Install this repository:
 ```
-git clone git@github.com:janrinze/RISCOSonM1.git
+git clone https://github.com:janrinze/RISCOSonM1.git
 ```
 
 Run the installer:
