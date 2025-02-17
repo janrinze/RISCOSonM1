@@ -20,3 +20,7 @@ Run the installer:
 cd RISCOSonM1
 ./install_M1.sh
 ```
+
+The file ``HardDisc4.util`` is an older version of the HardDisk4.util from https://www.riscosopen.org/content/downloads/common
+
+
