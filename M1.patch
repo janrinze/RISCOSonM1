@@ -1,0 +1,346 @@
+diff --git a/Unix/LinuxSupport/lib.sh b/Unix/LinuxSupport/lib.sh
+index 511c7e1..c103014 100644
+--- a/Unix/LinuxSupport/lib.sh
++++ b/Unix/LinuxSupport/lib.sh
+@@ -13,6 +13,8 @@
+ # limitations under the License.
+ 
+ arm_test() {
++  QEMU=Built/qemu-arm
++  return 0
+   "${BASH_SOURCE%%lib.sh}arm_test"
+   ret=$?
+   case $ret in
+diff --git a/Unix/SocketKVMFrontends/frontend_common.h b/Unix/SocketKVMFrontends/frontend_common.h
+index 0cb1718..5d1c358 100644
+--- a/Unix/SocketKVMFrontends/frontend_common.h
++++ b/Unix/SocketKVMFrontends/frontend_common.h
+@@ -140,3 +140,14 @@ void resend_keys() {
+     }
+   }
+ }
++void clear_keys() {
++  report r;
++  for(int i = 0; i != key_state.size(); ++i) {
++    if (key_state[i]) {
++      r.reason = report::ev_keyup;
++      r.key.code = i;
++      send_report(r);
++      key_state[i]=0;
++    }
++  }
++}
+diff --git a/Unix/SocketKVMFrontends/opengl.cpp b/Unix/SocketKVMFrontends/opengl.cpp
+index 960fc31..a19168f 100644
+--- a/Unix/SocketKVMFrontends/opengl.cpp
++++ b/Unix/SocketKVMFrontends/opengl.cpp
+@@ -39,6 +39,8 @@
+ #include <iostream>
+ #include <cstring>
+ 
++
++
+ #include <sys/uio.h>
+ #include <poll.h>
+ 
+@@ -61,14 +63,17 @@ int width = 640;
+ int no_updates = 0;
+ 
+ // Display size
+-#define SCREEN_WIDTH 2560
+-#define SCREEN_HEIGHT 1440
++#define SCREEN_WIDTH 3840
++#define SCREEN_HEIGHT 2160
++
++static int full_screen_width;
++static int full_screen_height;
+ 
+ void setupTexture();
+ volatile int draw_pixels=1;
+-void *current_pixels;
+-
+-
++unsigned int current_pixel_offset=0;
++unsigned int palette[256];
++volatile bool use_palette=false;
+ static unsigned short keycode[256];
+ static unsigned short shctrl[256];
+ 
+@@ -136,12 +141,13 @@ void init_keyboard(){
+ 
+ 
+   for (int k=0;k<26;k++)
+-    { keycode[k+'A']=keycode[k+'a'];shctrl[k+'A']=1;
+-      keycode[k+1]=keycode[k+'a'];}
++    { keycode[k+'A']=keycode[k+'a'];shctrl[k+'A']=1;}
++      //keycode[k+1]=keycode[k+'a'];}
+   keycode['\b']=KeyNo_BackSpace;
+   keycode['\r']=KeyNo_Return;
+   keycode['\t']=KeyNo_Tab;
+   keycode[27] = KeyNo_Escape;
++  keycode[127]= KeyNo_Break;
+ }
+ static int oldscreennumber=0,screennumber=0,display_size=1;
+ int display_width=SCREEN_WIDTH,display_height=SCREEN_HEIGHT;
+@@ -167,7 +173,7 @@ void My_mouse_routine(int x, int y){
+   report r;
+   r.reason = report::ev_mouse;
+   r.mouse.x = x * width / display_width;
+-  r.mouse.y = height - y * height / display_height;
++  r.mouse.y = y * height / display_height;
+   r.mouse.buttons = buttons;
+   send_report(r);
+ 
+@@ -251,10 +257,11 @@ void myspecialdown(int key, int x, int y)
+ }
+ 
+ // Setup Texture
++uint32_t backbuffer[SCREEN_WIDTH*SCREEN_HEIGHT];
+ void setupTexture()
+ {
+     // Create a texture
+-    glTexImage2D(GL_TEXTURE_2D, 0, 3, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, current_pixels);
++    glTexImage2D(GL_TEXTURE_2D, 0, 3, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, backbuffer);
+ 
+     // Set up the texture
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+@@ -267,6 +274,15 @@ void setupTexture()
+         draw_pixels=1;
+ }
+ 
++unsigned int temp_pixels[SCREEN_WIDTH*SCREEN_HEIGHT];
++unsigned int to_rgb(unsigned int col){
++   //unsigned int r,g,b;
++   //r=col>>24;
++   //g=(col>>16)&255;
++   //b=(col>>8)&255;
++   return col>>8;
++}
++
+ void updateTexture()
+ {
+     display_width = glutGet(GLUT_WINDOW_WIDTH);
+@@ -278,16 +294,19 @@ void updateTexture()
+     glMatrixMode(GL_MODELVIEW);
+     glViewport(0, 0, display_width, display_height);
+     // Update Texture
++    unsigned char * current_pixels_bytes = (unsigned char *) pixels+current_pixel_offset;
+     switch(log2bpp) {
+       case 3:
+-
+-        glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, width, height, GL_RGB,  GL_UNSIGNED_BYTE_3_3_2, current_pixels);
++        for (int t=0;t<display_size;t+=1)
++	   temp_pixels[t]=palette[current_pixels_bytes[t]];
++	
++        glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, width, height, GL_RGBA,  GL_UNSIGNED_INT_8_8_8_8_REV, &temp_pixels[0]);
+         break;
+       case 4:
+-        glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, width, height, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, current_pixels);
++        glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, width, height, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixels+current_pixel_offset);
+         break;
+       default:
+-        glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, width, height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, current_pixels);
++        glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, width, height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, pixels+current_pixel_offset);
+         break;
+     }
+ 
+@@ -328,14 +347,22 @@ void reshape_window(GLsizei w, GLsizei h)
+     glutPostRedisplay();
+ }
+ 
++void myentry(int state) {
++
++    clear_keys();
++}
++
+ int init_my_GL(int argc, char **argv)
+ {
+     // Setup OpenGL
+     glutInit(&argc, argv);
+     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
++    
++    full_screen_width = glutGet(GLUT_SCREEN_WIDTH);
++    full_screen_height = glutGet(GLUT_SCREEN_HEIGHT);
+ 
+     glutInitWindowSize(width, height);
+-    glutInitWindowPosition(320, 320);
++    glutInitWindowPosition(0,0);
+     glutCreateWindow("RISC OS 5");
+ 
+     glutDisplayFunc(display);
+@@ -349,13 +376,19 @@ int init_my_GL(int argc, char **argv)
+     glutMouseWheelFunc(mouseWheel);
+     glutSpecialFunc(myspecialdown);
+     glutSpecialUpFunc(myspecialup);
+-
++    glutEntryFunc(myentry);
+     setupTexture();
+ 
+     return 0;
+ }
+-
++double FPS_RENDER = 60.0;
+ auto start = std::chrono::steady_clock::now();
++auto fps_start = std::chrono::steady_clock::now();
++float current_fps=0.0f;
++int fps_count=0;
++
++char new_title[256];
++bool skip=false;
+ void interact_rule()
+ {
+ 
+@@ -366,52 +399,74 @@ void interact_rule()
+ 
+       command c;
+       int numscr;
++      bool redraw=false;
++
++      auto listen_start = std::chrono::steady_clock::now();
++
++      bool time_out=false;
++
++      while((!time_out) && (read_msg(c)>=4) ){
+ 
+-      int s = read_msg(c);
++      //int s = read_msg(c);
+ 
+-      if (s >= 4) {
++      //if (s >= 4) {
+ 
++      auto thismoment = std::chrono::steady_clock::now();
++      std::chrono::duration<double> diff = thismoment-listen_start;
++      if (diff.count()*FPS_RENDER>=0.8) time_out=true;
+ 
+       switch (c.reason) {
+         case command::c_mode_change:
+           height = c.mode.vidc[11];
+           width = c.mode.vidc[5];
+           log2bpp = c.mode.vidc[1];
+-          cerr << "Set mode " << log2bpp << ' ' << height << ' ' << width << endl;
++          cerr << "Set mode " << log2bpp << ' ' << width << 'x' << height << endl;
++	  cerr << "Display: " << full_screen_width <<'x'<<full_screen_height<<endl;
+ 
+           switch (log2bpp) {
++            case 2:
++              display_size = width*height/2;
++              use_palette = true;
+             case 3:
+               display_size = width*height;
++              use_palette = true;
+               break;
+             case 4:
+               display_size = width*height*2;
++              use_palette=false;
+               break;
+             case 5:
+               display_size = width*height*4;
++              use_palette=false;
+               break;
+           }
+-          current_pixels = pixels;
+-          if (width==SCREEN_WIDTH && height == SCREEN_HEIGHT)
++          current_pixel_offset = 0;
++          if (width==full_screen_width && height == full_screen_height)
+             glutFullScreen();
+           else
+             glutReshapeWindow(width, height);
+ 
+           glutPostRedisplay();
++	  redraw=true;
+           r.reason = report::ev_mode_sync;
+           write(sockets[0], &r.reason, sizeof(r.reason));
+           break;
+         case command::c_activescreen:
+           // swap buffer, ensure no unauthorised memory access.
+           if (c.activescreen.address + display_size <= screen_size) {
+-            current_pixels = pixels + static_cast<uint32_t>(c.activescreen.address);
++            current_pixel_offset = static_cast<uint32_t>(c.activescreen.address);
+           }
++	  redraw=true;//glutPostRedisplay();
+           break;
+         case command::c_suspend:
+           no_updates = c.suspend.delay;
+-          //update_screen();
++          redraw=true;//glutPostRedisplay();
+           break;
+         case command::c_set_palette: {
+-          /*
++          if (c.palette.type==0) {
++		palette[c.palette.index&255]= to_rgb(c.palette.colour);
++          }
++	  /*
+           SDL_Palette *p;
+           if (c.palette.type == 0) {
+             p = palette;
+@@ -427,8 +482,19 @@ void interact_rule()
+           for (numscr=0;numscr<NUM_SCREENS;numscr++)
+               SDL_SetSurfacePalette(screen[numscr], palette);
+           */
++          //glutPostRedisplay();
+           break;
+         }
++	case command::c_version: {
++          resend_keys();
++          //client_version = c.version.version;
++          report r;
++          r.reason = report::ev_version;
++          r.version.version = 1;
++          send_report(r);
++          break;
++        }
++
+         case command::c_pointer: {
+           /*
+           uint8_t *src = c.pointer.data;
+@@ -460,16 +526,31 @@ void interact_rule()
+     }
+     auto thismoment = std::chrono::steady_clock::now();
+     std::chrono::duration<double> diff = thismoment-start;
+-    if (diff.count() >0.02) {
+-       display();
++    if (redraw ||(diff.count()*FPS_RENDER >=1.0)) {
+        start=thismoment;
++        if (skip && !redraw){
++           skip=false;
++            return;
++        }
++        skip = redraw;
++       glutPostRedisplay();//display();
++       fps_count+=1;
++       std::chrono::duration<double> fps_diff = thismoment-fps_start;
++       if (fps_diff.count()>=1.0){
++          float fps = (float)fps_count / fps_diff.count();
++          sprintf(&new_title[0],"Risc PC %3.1f fps",fps);
++          glutSetWindowTitle(new_title);
++          fps_count=0;
++          fps_start=thismoment;
++       }
++         
+      }
+ }
+ 
+ 
+ 
+ int main(int argc, char **argv) {
+-
++/*
+   struct option opts[] = {
+     {"chromebook", no_argument, nullptr, 'c'},
+     {"swapmouse", no_argument, nullptr, 's'},
+@@ -486,14 +567,13 @@ int main(int argc, char **argv) {
+         break;
+     }
+   }
+-
++*/
+ 
+   run_RISC_OS(argv + optind);
+ 
+   int cursor_active_x = 0;
+   int cursor_active_y = 0;
+ 
+-  current_pixels = pixels;
+   init_keyboard();
+   init_my_GL(argc,argv);
+ 
