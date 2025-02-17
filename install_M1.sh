@@ -15,8 +15,10 @@ RISC_OS_IXFS_HardDisc4='IXFS:$' RISC_OS_Alias_IXFSBoot="run HardDisc4/util" ./op
 
 echo >> hostfs/HardDisc4/\!Boot/RO520Hook/Boot/Desktop
 echo "AddTinyDir HardDisc4" >> hostfs/HardDisc4/\!Boot/RO520Hook/Boot/Desktop
+mkdir -p hostfs/HardDisc4/\!Boot/Loader
+dd if=/dev/zero of=hostfs/HardDisc4/\!Boot/Loader/CMOS bs=256 count=1
 cd ..
 fi
 # boot RISC OS
 cd RISC_OS_Linux_Binary
-RISC_OS_IXFS_HardDisc4='IXFS:$.HardDisc4' RISC_OS_Alias_IXFSBoot='HardDisc4.!Boot' ./opengl bwrap --bind ./hostfs / --ro-bind /usr /usr --ro-bind /lib /lib --ro-bind ./Built/qemu-arm /qemu-arm --ro-bind $RISCOSIMG /RISCOS.IMG --proc /proc --chdir / ./qemu-arm RISCOS.IMG >/dev/null
+RISC_OS_IXFS_HardDisc4='IXFS:$.HardDisc4' RISC_OS_Alias_IXFSBoot='HardDisc4.!Boot' ./opengl bwrap --bind ./hostfs / --ro-bind /usr /usr --ro-bind /lib /lib --ro-bind ./Built/qemu-arm /qemu-arm --ro-bind $RISCOSIMG /RISCOS.IMG --proc /proc --chdir / ./qemu-arm RISCOS.IMG --nvram ./HardDisc4/\!Boot/Loader/CMOS >/dev/null
