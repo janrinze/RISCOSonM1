@@ -11,7 +11,7 @@ sudo apt install attr bash bubblewrap build-essential g++ gcc git libattr1 libat
 
 Install this repository:
 ```
-git clone https://github.com:janrinze/RISCOSonM1.git
+git clone https://github.com/janrinze/RISCOSonM1.git
 ```
 
 Run the installer:
