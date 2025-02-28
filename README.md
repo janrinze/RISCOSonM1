@@ -1,7 +1,7 @@
-# Quick install RISCOS under Linux
+# Quick install RISC OS under Linux
 
  [Installing on Linux on Apple M1/M2/M3/M4 in a virtual machine or Asahi Linux.](#installing-on-linux-on-apple-m1m2m3m4-in-a-virtual-machine-or-asahi-linux)<br>
- [Installing RISCOS on the RPi 5 running Debian](#installing-riscos-on-the-rpi-5-running-debian)<br>
+ [Installing RISCOS on the RPi 5 running Debian](#installing-risc-os-on-the-rpi-5-running-debian)<br>
  [Notes](#notes)
 
 ## Installing on Linux on Apple M1/M2/M3/M4 in a virtual machine or Asahi Linux.
@@ -26,7 +26,7 @@ Run the installer:
 cd RISCOSonM1
 ./install_M1.sh
 ```
-## Installing RISCOS on the RPi 5 running Debian
+## Installing RISC OS on the RPi 5 running Debian
 For RPi5 you need to be running kernel8.img at boot.
 Ensure you have in ```/boot/firmware/config.txt``` :
 
@@ -53,6 +53,6 @@ sudo sysctl vm.mmap_min_addr=12288
 ./install_RPi5.sh
 ```
 # Notes:
-The file ``HardDisc4.util`` is an older version of the HardDisk4.util from https://www.riscosopen.org/content/downloads/common
+The file ``HardDisc4.util`` is an older version of the HardDisk4.util from [RISC OS open](https://www.riscosopen.org/content/downloads/common)
 
 
