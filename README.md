@@ -1,7 +1,7 @@
 # Quick install RISC OS under Linux
 
  [Installing on Linux on Apple M1/M2/M3/M4 in a virtual machine or Asahi Linux.](#installing-on-linux-on-apple-m1m2m3m4-in-a-virtual-machine-or-asahi-linux)<br>
- [Installing RISCOS on the RPi 5 running Debian](#installing-risc-os-on-the-rpi-5-running-debian)<br>
+ [Installing RISC OS on the RPi 5 running Debian](#installing-risc-os-on-the-rpi-5-running-debian)<br>
  [Notes](#notes)
 
 ## Installing on Linux on Apple M1/M2/M3/M4 in a virtual machine or Asahi Linux.
