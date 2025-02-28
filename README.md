@@ -1,5 +1,8 @@
-# Qiuck install RISCOS under Linux
-Available for Apple M1/M2/M3/M4 (Debina in a virtual machine) or Rpi5 running Debian.
+# Quick install RISCOS under Linux
+
+ [Installing on Linux on Apple M1/M2/M3/M4 in a virtual machine or Asahi Linux.](#installing-on-linux-on-apple-m1m2m3m4-in-a-virtual-machine-or-asahi-linux)<br>
+ [Installing RISCOS on the RPi 5 running Debian](#installing-riscos-on-the-rpi-5-running-debian)<br>
+ [Notes](#notes)
 
 ## Installing on Linux on Apple M1/M2/M3/M4 in a virtual machine or Asahi Linux.
 Patches and tools to setup RISC OS under Linux on platforms like Apple M1.
@@ -23,7 +26,7 @@ Run the installer:
 cd RISCOSonM1
 ./install_M1.sh
 ```
-## RISCOS on the RPi 5 running Debian
+## Installing RISCOS on the RPi 5 running Debian
 For RPi5 you need to be running kernel8.img at boot.
 Ensure you have in ```/boot/firmware/config.txt``` :
 
